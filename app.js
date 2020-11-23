@@ -55,6 +55,11 @@ function getTopics(rootSearch, callback)
 
   MongoClient.connect(uri, async function(err, client){
 
+    if (err)
+    {
+      console.log('An error occurred connecting to MongoDB: ', err);
+    }
+
     var db = client.db('Pncl');
     const rootQuery = { "topic": rootSearch };
 
