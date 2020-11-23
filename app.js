@@ -7,9 +7,13 @@ app.use(bodyParser.json());
 
 var mongoose = require('mongoose');
 
+var port = normalizePort(process.env.PORT || '3000');
+
 const {MongoClient} = require('mongodb');
 const uri = "mongodb+srv://aviwashere:aviwashere@cluster0.ajf7l.mongodb.net/<dbname>?retryWrites=true&w=majority";
 
+
+app.listen(port);
 
 app.get('/', function(req, res) {
   res.send('Hello Worldd');
@@ -61,7 +65,7 @@ function getTopics(rootSearch, callback)
       {
         var topic = topicQueue.shift();
         const topicQuery = { "topic": topic };
-        var result = await db.collection("Topics").findOne(topicQuery);//.then(topicResult => {
+        var result = await db.collection("Topics").findOne(topicQuery);
 
         for (val of result['subtopics'])
         {
@@ -108,4 +112,19 @@ function getQuestions(topicTree, callback)
   });
 }
 
-app.listen(process.env.PORT || 3000)
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
