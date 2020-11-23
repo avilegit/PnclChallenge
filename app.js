@@ -24,27 +24,37 @@ app.get('/search/:topic', function(req, res) {
   var topic = req.params.topic;
   console.log(topic);
 
-  getTopics(topic, function(topicTree){
-    if (topicTree != null)
+  if (topic == 'all questions')
+  {
+    getAllQuestions(function(questionNums)
     {
-      getQuestions(topicTree, function(questionNums)
+      res.send(Array.from(questionNums));
+    });
+  }
+  else
+  {
+    getTopics(topic, function(topicTree){
+      if (topicTree != null)
       {
-        if(questionNums)
+        getQuestions(topicTree, function(questionNums)
         {
-          res.send(Array.from(questionNums));
-        }
-        else
-        {
-          res.send("no questions found");
-        }
-      });
-    }
-    else
-    {
-      res.send("bad query");
-    }
-
-  });
+          if(questionNums)
+          {
+            res.send(Array.from(questionNums));
+          }
+          else
+          {
+            res.send("no questions found");
+          }
+        });
+      }
+      else
+      {
+        res.send("bad query");
+      }
+  
+    });
+  }
 })
 
 function getTopics(rootSearch, callback)
@@ -63,21 +73,28 @@ function getTopics(rootSearch, callback)
     var db = client.db('Pncl');
     const rootQuery = { "topic": rootSearch };
 
+    var seen = new Set();
+
     var rootResult = await db.collection("Topics").findOne(rootQuery);
     if (rootResult)
     {
       while (topicQueue.length != 0)
       {
         var topic = topicQueue.shift();
-        const topicQuery = { "topic": topic };
-        var result = await db.collection("Topics").findOne(topicQuery);
 
-        for (val of result['subtopics'])
+        if (!seen.has(topic))
         {
-          topicQueue.push(val);
-          topicTree.push(val);
-        }
+          seen.add(topic);
 
+          const topicQuery = { "topic": topic };
+          var result = await db.collection("Topics").findOne(topicQuery);
+  
+          for (val of result['subtopics'])
+          {
+            topicQueue.push(val);
+            topicTree.push(val);
+          }
+        }
       }
       callback(topicTree);
     }
@@ -87,6 +104,27 @@ function getTopics(rootSearch, callback)
     }
   });
 
+}
+
+function getAllQuestions(callback)
+{
+  MongoClient.connect(uri, function(err, client){
+
+    var db = client.db('Pncl');
+
+    res = new Set();
+    
+    var cursor = db.collection("Questions").find();
+    cursor.forEach(function(doc,err){
+      for (question of doc['questions'])
+      {
+        res.add(question);
+      }
+    }, function()
+    {
+      callback(res);
+    });
+  });
 }
 
 function getQuestions(topicTree, callback)
